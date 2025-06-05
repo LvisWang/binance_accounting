@@ -178,4 +178,4 @@ A:
 
 ⚡ **本地使用**: 运行 `python run.py` 并访问 http://localhost:8080  
 🌐 **云端访问**: 部署到 Vercel 后获得公网地址，随时随地使用  
-📚 **部署指南**: 查看 [DEPLOYMENT.md](./DEPLOYMENT.md) 了解详细部署步骤 
+📚 **部署指南**: 查看 [DEPLOYMENT.md](./DEPLOYMENT.md) 了解详细部署步骤
