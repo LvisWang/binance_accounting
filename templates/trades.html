@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}交易记录 - Binance 多账户交易分析{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- 页面标题 -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-list-check"></i> 交易记录</h2>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> 返回首页
+            </a>
+        </div>
+
+        <!-- 交易记录表格 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-table"></i> 所有交易记录</h5>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-light me-2" onclick="selectAll()">
+                        <i class="bi bi-check-all"></i> 全选
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="clearSelection()">
+                        <i class="bi bi-x-square"></i> 清除选择
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="tradesTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="50">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                </th>
+                                <th>账户</th>
+                                <th>交易ID</th>
+                                <th>时间</th>
+                                <th>方向</th>
+                                <th>价格</th>
+                                <th>数量</th>
+                                <th>金额</th>
+                                <th>手续费</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradesTableBody">
+                            <!-- 动态加载的交易数据 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span id="selectionInfo" class="text-muted">请选择要分析的交易</span>
+                    <button type="button" class="btn btn-success" onclick="analyzeSelected()" disabled id="analyzeBtn">
+                        <i class="bi bi-calculator"></i> 分析选中交易
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分析结果 -->
+        <div class="card analysis-card" id="analysisCard" style="display: none;">
+            <div class="card-header bg-gradient-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> 分析结果</h5>
+            </div>
+            <div class="card-body">
+                <div id="analysisResults"></div>
+                <div class="mt-3 text-center">
+                    <a href="/export_csv" class="btn btn-primary" id="exportBtn" style="display: none;">
+                        <i class="bi bi-download"></i> 导出 CSV 报告
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 加载提示 -->
+<div class="text-center" id="loadingIndicator">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2">正在加载交易数据...</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let tradesData = [];
+let selectedIndices = new Set();
+
+// 页面加载时获取交易数据
+document.addEventListener('DOMContentLoaded', function() {
+    loadTradesData();
+});
+
+// 从后端获取交易数据
+async function loadTradesData() {
+    try {
+        const response = await axios.get('/get_trades_data');
+        
+        if (response.data.success) {
+            tradesData = response.data.trades;
+            renderTradesTable();
+        } else {
+            showAlert('danger', '加载交易数据失败：' + response.data.message);
+        }
+    } catch (error) {
+        showAlert('danger', '加载交易数据失败：' + error.message);
+    } finally {
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
+}
+
+// 渲染交易表格
+function renderTradesTable() {
+    const tbody = document.getElementById('tradesTableBody');
+    
+    if (tradesData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">没有交易数据</td></tr>';
+        return;
+    }
+    
+    const rows = tradesData.map((trade, index) => {
+        const directionClass = trade.direction === '买入' ? 'trade-buy' : 'trade-sell';
+        return `
+            <tr>
+                <td>
+                    <input type="checkbox" value="${index}" onchange="updateSelection(this)">
+                </td>
+                <td><span class="badge bg-secondary">${trade.account}</span></td>
+                <td><small>${trade.id}</small></td>
+                <td><small>${trade.time}</small></td>
+                <td><span class="${directionClass}">${trade.direction}</span></td>
+                <td>${trade.price.toFixed(6)}</td>
+                <td>${trade.qty.toFixed(6)}</td>
+                <td>${trade.amount.toFixed(2)}</td>
+                <td><small>${trade.commission.toFixed(8)} ${trade.commission_asset}</small></td>
+            </tr>
+        `;
+    }).join('');
+    
+    tbody.innerHTML = rows;
+    document.getElementById('loadingIndicator').style.display = 'none';
+}
+
+// 更新选择状态
+function updateSelection(checkbox) {
+    const index = parseInt(checkbox.value);
+    
+    if (checkbox.checked) {
+        selectedIndices.add(index);
+    } else {
+        selectedIndices.delete(index);
+    }
+    
+    updateSelectionInfo();
+    updateAnalyzeButton();
+}
+
+// 全选/取消全选
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const checkboxes = document.querySelectorAll('#tradesTableBody input[type="checkbox"]');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+        updateSelection(checkbox);
+    });
+}
+
+// 全选
+function selectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    selectAllCheckbox.checked = true;
+    toggleSelectAll();
+}
+
+// 清除选择
+function clearSelection() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    selectAllCheckbox.checked = false;
+    toggleSelectAll();
+}
+
+// 更新选择信息
+function updateSelectionInfo() {
+    const info = document.getElementById('selectionInfo');
+    const count = selectedIndices.size;
+    
+    if (count === 0) {
+        info.textContent = '请选择要分析的交易';
+    } else {
+        info.textContent = `已选择 ${count} 条交易`;
+    }
+}
+
+// 更新分析按钮状态
+function updateAnalyzeButton() {
+    const button = document.getElementById('analyzeBtn');
+    button.disabled = selectedIndices.size === 0;
+}
+
+// 分析选中的交易
+async function analyzeSelected() {
+    if (selectedIndices.size === 0) {
+        showAlert('warning', '请先选择要分析的交易');
+        return;
+    }
+    
+    const button = document.getElementById('analyzeBtn');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>分析中...';
+    button.disabled = true;
+    
+    try {
+        const response = await axios.post('/analyze_trades', {
+            selected_indices: Array.from(selectedIndices)
+        });
+        
+        if (response.data.success) {
+            showAlert('success', '分析完成！');
+            displayAnalysisResults(response.data.analysis);
+        } else {
+            showAlert('danger', response.data.message);
+        }
+    } catch (error) {
+        showAlert('danger', '分析失败：' + (error.response?.data?.message || error.message));
+    } finally {
+        button.innerHTML = originalText;
+        button.disabled = selectedIndices.size === 0;
+    }
+}
+
+// 显示分析结果
+function displayAnalysisResults(analysis) {
+    const card = document.getElementById('analysisCard');
+    const resultsDiv = document.getElementById('analysisResults');
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <h6 class="text-primary"><i class="bi bi-info-circle"></i> 分析摘要</h6>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <h4 class="text-primary">${analysis.total_count}</h4>
+                            <small class="text-muted">总交易数</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <h4 class="text-success">${analysis.buy_count}</h4>
+                            <small class="text-muted">买入交易</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <h4 class="text-danger">${analysis.sell_count}</h4>
+                            <small class="text-muted">卖出交易</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <h4 class="text-info">${analysis.accounts.length}</h4>
+                            <small class="text-muted">涉及账户</small>
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-2"><strong>涉及账户：</strong> ${analysis.accounts.join(', ')}</p>
+            </div>
+        </div>
+    `;
+    
+    // 买入统计
+    if (analysis.buy_stats) {
+        html += `
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h6 class="text-success"><i class="bi bi-arrow-up-circle"></i> 买入统计</h6>
+                    <table class="table table-sm">
+                        <tr><td>平均增持价格</td><td><strong>${analysis.buy_stats.avg_price.toFixed(6)}</strong></td></tr>
+                        <tr><td>总买入数量</td><td><strong>${analysis.buy_stats.total_qty.toFixed(6)}</strong></td></tr>
+                        <tr><td>总买入金额</td><td><strong>${analysis.buy_stats.total_amount.toFixed(2)}</strong></td></tr>
+                    </table>
+                    <small class="text-muted">买入手续费：</small><br>
+        `;
+        for (const [asset, commission] of Object.entries(analysis.buy_stats.commission_by_asset)) {
+            html += `<small class="badge bg-light text-dark me-1">${commission.toFixed(8)} ${asset}</small>`;
+        }
+        html += `</div>`;
+    }
+    
+    // 卖出统计
+    if (analysis.sell_stats) {
+        html += `
+                <div class="col-md-6">
+                    <h6 class="text-danger"><i class="bi bi-arrow-down-circle"></i> 卖出统计</h6>
+                    <table class="table table-sm">
+                        <tr><td>平均减持价格</td><td><strong>${analysis.sell_stats.avg_price.toFixed(6)}</strong></td></tr>
+                        <tr><td>总卖出数量</td><td><strong>${analysis.sell_stats.total_qty.toFixed(6)}</strong></td></tr>
+                        <tr><td>总卖出金额</td><td><strong>${analysis.sell_stats.total_amount.toFixed(2)}</strong></td></tr>
+                    </table>
+                    <small class="text-muted">卖出手续费：</small><br>
+        `;
+        for (const [asset, commission] of Object.entries(analysis.sell_stats.commission_by_asset)) {
+            html += `<small class="badge bg-light text-dark me-1">${commission.toFixed(8)} ${asset}</small>`;
+        }
+        html += `</div>`;
+    }
+    
+    html += `</div>`;
+    
+    // 盈亏分析
+    if (analysis.profit_stats) {
+        const profitClass = analysis.profit_stats.profit_percentage >= 0 ? 'profit-positive' : 'profit-negative';
+        const profitIcon = analysis.profit_stats.profit_percentage >= 0 ? 'bi-arrow-up' : 'bi-arrow-down';
+        
+        html += `
+            <div class="row mb-3">
+                <div class="col-12">
+                    <h6 class="text-warning"><i class="bi bi-calculator"></i> 盈亏分析</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h5 class="${profitClass}">
+                                    <i class="bi ${profitIcon}"></i> ${analysis.profit_stats.profit_percentage.toFixed(2)}%
+                                </h5>
+                                <small class="text-muted">盈亏百分比</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h5 class="${profitClass}">${analysis.profit_stats.price_diff.toFixed(6)}</h5>
+                                <small class="text-muted">价差</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h5 class="${profitClass}">${analysis.profit_stats.total_profit.toFixed(2)}</h5>
+                                <small class="text-muted">总盈亏</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h5>${analysis.profit_stats.min_qty.toFixed(6)}</h5>
+                                <small class="text-muted">基准数量</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 总手续费
+    html += `
+        <div class="row">
+            <div class="col-12">
+                <h6 class="text-info"><i class="bi bi-receipt"></i> 总手续费</h6>
+                <p>
+    `;
+    for (const [asset, commission] of Object.entries(analysis.total_commission_by_asset)) {
+        html += `<span class="badge bg-info me-2">${commission.toFixed(8)} ${asset}</span>`;
+    }
+    html += `
+                </p>
+            </div>
+        </div>
+    `;
+    
+    resultsDiv.innerHTML = html;
+    card.style.display = 'block';
+    document.getElementById('exportBtn').style.display = 'inline-block';
+    
+    // 滚动到分析结果
+    card.scrollIntoView({ behavior: 'smooth' });
+}
+
+// 显示提示信息
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('main.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // 3秒后自动消失
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+</script>
+{% endblock %} 

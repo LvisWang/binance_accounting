@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""
+Binance API 配置文件模板
+请复制此文件为 config.py 并填入你的实际配置
+"""
+
+# Binance API 配置
+BINANCE_CONFIG = {
+    # 🔑 在这里填入你的Binance API密钥
+    "api_key": "your_binance_api_key_here",
+    "secret_key": "your_binance_secret_key_here",
+    
+    # 网络配置
+    "testnet": False,  # 设为True使用测试网络
+    "timeout": 30,     # 请求超时时间（秒）
+    
+    # 请求限制
+    "request_delay": 0.1,  # 请求间隔（秒）
+    "max_retries": 3,      # 最大重试次数
+}
+
+# 导出配置
+EXPORT_CONFIG = {
+    # 默认导出格式
+    "default_format": "csv",  # csv 或 json
+    
+    # 文件命名
+    "filename_template": "{symbol}_trades_{start_date}_to_{end_date}",
+    
+    # CSV配置
+    "csv_encoding": "utf-8-sig",  # 确保Excel能正确打开中文
+    "include_index": False,        # 是否包含行号
+    
+    # 数据处理
+    "date_format": "%Y-%m-%d %H:%M:%S",
+    "float_precision": 8,  # 浮点数精度
+}
+
+# 默认查询参数
+DEFAULT_PARAMS = {
+    # 默认交易对
+    "symbol": "BTCUSDT",
+    
+    # 默认时间范围（天数）
+    "default_days": 30,
+    
+    # 单次请求限制
+    "limit": 1000,
+}
+
+# 支持的交易对列表（常用的）
+SUPPORTED_SYMBOLS = [
+    "BTCUSDT",   # 比特币
+    "ETHUSDT",   # 以太坊
+    "BNBUSDT",   # 币安币
+    "ADAUSDT",   # 艾达币
+    "XRPUSDT",   # 瑞波币
+    "SOLUSDT",   # Solana
+    "DOTUSDT",   # 波卡
+    "DOGEUSDT",  # 狗狗币
+    "AVAXUSDT",  # 雪崩
+    "MATICUSDT", # Polygon
+    "LTCUSDT",   # 莱特币
+    "UNIUSDT",   # Uniswap
+    "LINKUSDT",  # Chainlink
+    "ATOMUSDT",  # Cosmos
+    "ETCUSDT",   # 以太经典
+] 

@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}账户配置 - Binance 多账户交易分析{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- 页面标题 -->
+        <div class="text-center mb-4">
+            <h1 class="display-5 fw-bold text-primary">
+                <i class="bi bi-wallet2"></i> Binance 多账户交易分析
+            </h1>
+            <p class="lead text-muted">配置您的多个 Binance 账户，统一查询和分析交易记录</p>
+        </div>
+
+        <!-- 账户配置卡片 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> 添加 Binance 账户</h5>
+            </div>
+            <div class="card-body">
+                <form id="accountForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="accountName" class="form-label">账户名称</label>
+                            <input type="text" class="form-control" id="accountName" placeholder="例如：主账户" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="testnet">
+                                <label class="form-check-label" for="testnet">
+                                    使用测试网
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="apiKey" class="form-label">API Key</label>
+                        <input type="text" class="form-control" id="apiKey" placeholder="输入您的 Binance API Key" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="secretKey" class="form-label">Secret Key</label>
+                        <input type="password" class="form-control" id="secretKey" placeholder="输入您的 Binance Secret Key" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
+                        <i class="bi bi-plus-lg"></i> 添加账户
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 已添加账户列表 -->
+        <div class="card mb-4" id="accountsCard" style="display: none;">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-check-circle"></i> 已配置账户</h5>
+                <button type="button" class="btn btn-sm btn-outline-light" onclick="clearAccounts()">
+                    <i class="bi bi-trash"></i> 清除所有
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="accountsList"></div>
+            </div>
+        </div>
+
+        <!-- 交易查询卡片 -->
+        <div class="card mb-4" id="queryCard" style="display: none;">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-search"></i> 查询交易记录</h5>
+            </div>
+            <div class="card-body">
+                <form id="queryForm">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="symbol" class="form-label">交易对</label>
+                            <input type="text" class="form-control" id="symbol" value="PNUTUSDT" placeholder="例如：BTCUSDT" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="startDate" class="form-label">开始日期</label>
+                            <input type="date" class="form-control" id="startDate" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="endDate" class="form-label">结束日期</label>
+                            <input type="date" class="form-control" id="endDate" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-info text-white">
+                        <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
+                        <i class="bi bi-search"></i> 查询交易记录
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 查询结果 -->
+        <div class="card" id="resultsCard" style="display: none;">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> 查询结果</h5>
+            </div>
+            <div class="card-body">
+                <div id="queryResults"></div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-success" onclick="goToTrades()">
+                        <i class="bi bi-arrow-right"></i> 查看详细交易记录
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 使用说明 -->
+<div class="row mt-5">
+    <div class="col-lg-10 mx-auto">
+        <div class="card border-light">
+            <div class="card-body">
+                <h6 class="card-title text-muted"><i class="bi bi-info-circle"></i> 使用说明</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>步骤1：</strong> 添加您的 Binance 账户（可添加多个）<br>
+                            <strong>步骤2：</strong> 设置查询参数（交易对、时间范围）<br>
+                            <strong>步骤3：</strong> 查询并分析交易记录
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>安全提示：</strong> API 密钥仅在内存中临时存储，不会保存到文件<br>
+                            <strong>权限要求：</strong> API 密钥需要现货交易读取权限<br>
+                            <strong>网络要求：</strong> 确保网络连接正常，可访问 Binance API
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 页面加载时设置默认日期
+document.addEventListener('DOMContentLoaded', function() {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30); // 默认30天
+    
+    document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+    document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+    
+    // 如果已有账户，显示账户列表
+    updateAccountsList();
+});
+
+// 添加账户
+document.getElementById('accountForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const loading = submitBtn.querySelector('.loading');
+    
+    // 显示加载状态
+    loading.style.display = 'inline-block';
+    submitBtn.disabled = true;
+    
+    const data = {
+        account_name: document.getElementById('accountName').value,
+        api_key: document.getElementById('apiKey').value,
+        secret_key: document.getElementById('secretKey').value,
+        testnet: document.getElementById('testnet').checked
+    };
+    
+    try {
+        const response = await axios.post('/add_account', data);
+        
+        if (response.data.success) {
+            showAlert('success', response.data.message);
+            form.reset();
+            updateAccountsList();
+        } else {
+            showAlert('danger', response.data.message);
+        }
+    } catch (error) {
+        showAlert('danger', '添加账户失败：' + (error.response?.data?.message || error.message));
+    } finally {
+        loading.style.display = 'none';
+        submitBtn.disabled = false;
+    }
+});
+
+// 查询交易记录
+document.getElementById('queryForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const loading = submitBtn.querySelector('.loading');
+    
+    loading.style.display = 'inline-block';
+    submitBtn.disabled = true;
+    
+    const data = {
+        symbol: document.getElementById('symbol').value.toUpperCase(),
+        start_date: document.getElementById('startDate').value,
+        end_date: document.getElementById('endDate').value
+    };
+    
+    try {
+        const response = await axios.post('/query_trades', data);
+        
+        if (response.data.success) {
+            showAlert('success', `查询成功！共找到 ${response.data.total_count} 条交易记录`);
+            displayQueryResults(response.data);
+        } else {
+            showAlert('danger', response.data.message);
+        }
+    } catch (error) {
+        showAlert('danger', '查询失败：' + (error.response?.data?.message || error.message));
+    } finally {
+        loading.style.display = 'none';
+        submitBtn.disabled = false;
+    }
+});
+
+// 更新账户列表
+function updateAccountsList() {
+    // 这里只是简单的UI更新，实际的账户状态由后端维护
+    const accountsCard = document.getElementById('accountsCard');
+    const queryCard = document.getElementById('queryCard');
+    
+    // 简单检查是否有账户（这里只是示例）
+    accountsCard.style.display = 'block';
+    queryCard.style.display = 'block';
+}
+
+// 显示查询结果
+function displayQueryResults(data) {
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsDiv = document.getElementById('queryResults');
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>查询统计</h6>
+                <p>总交易数：<strong>${data.total_count}</strong></p>
+            </div>
+            <div class="col-md-6">
+                <h6>各账户情况</h6>
+    `;
+    
+    for (const [account, stats] of Object.entries(data.account_stats)) {
+        const statusClass = stats.success ? 'text-success' : 'text-danger';
+        const statusIcon = stats.success ? 'bi-check-circle' : 'bi-x-circle';
+        html += `
+            <p class="${statusClass}">
+                <i class="bi ${statusIcon}"></i> ${account}：${stats.count} 条记录
+                ${!stats.success ? `<br><small>${stats.error}</small>` : ''}
+            </p>
+        `;
+    }
+    
+    html += `
+            </div>
+        </div>
+    `;
+    
+    resultsDiv.innerHTML = html;
+    resultsCard.style.display = 'block';
+}
+
+// 跳转到交易记录页面
+function goToTrades() {
+    window.location.href = '/trades';
+}
+
+// 清除所有账户
+async function clearAccounts() {
+    if (!confirm('确定要清除所有账户配置吗？')) {
+        return;
+    }
+    
+    try {
+        const response = await axios.post('/clear_accounts');
+        if (response.data.success) {
+            showAlert('success', response.data.message);
+            document.getElementById('accountsCard').style.display = 'none';
+            document.getElementById('queryCard').style.display = 'none';
+            document.getElementById('resultsCard').style.display = 'none';
+        }
+    } catch (error) {
+        showAlert('danger', '清除失败：' + error.message);
+    }
+}
+
+// 显示提示信息
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('main.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // 3秒后自动消失
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+</script>
+{% endblock %} 

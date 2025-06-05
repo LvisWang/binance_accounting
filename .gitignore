@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# 敏感配置文件（保留示例文件）
+config.py
+!config.py.example
+
+# 导出的交易数据
+*_trades_*.csv
+*_trades_*.json
+*_analysis_*.csv
+api_result.json
+
+# Vercel
+.vercel/
+
+# 临时文件
+*.tmp 
