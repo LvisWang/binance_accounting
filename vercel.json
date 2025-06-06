@@ -1,18 +1,8 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/app.py": {
-      "runtime": "vercel-python@3.9.16"
+    "src/app/api/*/route.ts": {
+      "maxDuration": 30
     }
   },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/app.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/app.py"
-    }
-  ]
+  "regions": ["sin1", "hkg1", "nrt1"]
 } 

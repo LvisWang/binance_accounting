@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+/* 输入框样式增强 */
+input[type="text"], 
+input[type="password"], 
+input[type="date"] {
+  color: #1f2937 !important; /* 深灰色文字 */
+  background-color: #ffffff !important; /* 白色背景 */
+}
+
+input[type="text"]:focus, 
+input[type="password"]:focus, 
+input[type="date"]:focus {
+  border-color: #F0B90B !important;
+  box-shadow: 0 0 0 3px rgba(240, 185, 11, 0.1) !important;
+}
+
+input[type="text"]:disabled, 
+input[type="password"]:disabled, 
+input[type="date"]:disabled {
+  background-color: #f9fafb !important;
+  color: #9ca3af !important;
+}
+
+/* 复选框样式 */
+input[type="checkbox"] {
+  accent-color: #F0B90B;
+}
+
+/* 快速选择按钮样式 */
+.quick-date-btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.quick-date-btn:hover {
+  background-color: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.quick-date-btn.active {
+  background-color: #F0B90B;
+  color: #1E2329;
+  font-weight: 600;
+  transform: translateY(-1px);
+}
+
+.trade-row:hover {
+  background-color: rgba(240, 185, 11, 0.1);
+}
+
+.analysis-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.profit-positive {
+  color: #10b981;
+}
+
+.profit-negative {
+  color: #ef4444;
+}
+
+/* 按钮禁用状态 */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 表单标签样式 */
+label {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* 模态框样式增强 */
+.modal-overlay {
+  backdrop-filter: blur(4px);
+} 

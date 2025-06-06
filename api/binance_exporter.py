@@ -14,16 +14,15 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import config
 
 class BinanceTradeExporter:
     """Binance 交易记录导出器"""
     
-    def __init__(self, api_key=None, secret_key=None, testnet=False):
-        if not api_key or not secret_key:
-            raise ValueError("API Key 和 Secret Key 是必需的")
-        
-        self.api_key = api_key
-        self.secret_key = secret_key
+    def __init__(self, api_key=None, secret_key=None, testnet=None):
+        self.api_key = api_key or config.API_KEY
+        self.secret_key = secret_key or config.SECRET_KEY
+        testnet = testnet if testnet is not None else config.TESTNET
         self.base_url = "https://testnet.binance.vision/api/v3" if testnet else "https://api.binance.com/api/v3"
         
         # 创建带重试机制的session
