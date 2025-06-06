@@ -43,4 +43,40 @@ __pycache__/
 .Python
 venv/
 .venv/
+
+# 🔒 敏感配置文件 - 绝不要提交包含真实API密钥的文件
+config.py
 api_result.json
+*.key
+*.secret
+
+# 🗂️ 用户数据和导出文件
+exports/
+downloads/
+*.csv
+*.json
+trades_*.csv
+analysis_*.json
+
+# 📝 开发和调试文件
+.vscode/
+.idea/
+*.log
+debug.log
+error.log
+
+# 💾 临时文件和缓存
+temp/
+tmp/
+cache/
+.cache/
+
+# 🔧 操作系统和编辑器文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.directory
+*~
+.fuse_hidden*
+.nfs*
