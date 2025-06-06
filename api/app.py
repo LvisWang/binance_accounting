@@ -10,11 +10,8 @@ import csv
 import tempfile
 from datetime import datetime, timedelta
 import sys
-import traceback
 
-# 添加项目根目录到 Python 路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+# 直接导入同目录下的模块
 from binance_exporter import BinanceTradeExporter
 
 app = Flask(__name__, 
@@ -22,7 +19,7 @@ app = Flask(__name__,
             static_folder='../static')
 
 # 从环境变量获取密钥，如果没有则使用默认值
-app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production-2024')
 
 class MultiAccountTradeAnalyzer:
     """多账户交易分析器"""
@@ -430,6 +427,6 @@ def clear_accounts():
 # Vercel 要求的应用实例
 if __name__ == '__main__':
     app.run(debug=True)
-else:
-    # Vercel serverless 环境
-    app.debug = False 
+
+# 这个是 Vercel 需要的 WSGI 应用实例
+app.wsgi_app = app 
