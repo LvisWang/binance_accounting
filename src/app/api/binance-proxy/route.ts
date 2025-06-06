@@ -16,44 +16,83 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const baseUrl = testnet 
-      ? 'https://testnet.binance.vision/api/v3'
-      : 'https://api.binance.com/api/v3'
+    // 多个备用API端点来处理地理限制
+    const apiEndpoints = testnet 
+      ? ['https://testnet.binance.vision/api/v3']
+      : [
+          'https://api.binance.com/api/v3',
+          'https://api1.binance.com/api/v3',
+          'https://api2.binance.com/api/v3',
+          'https://api3.binance.com/api/v3',
+          'https://data-api.binance.vision/api/v3'
+        ]
 
-    // 构建完整 URL - 如果 queryString 为空，则不添加查询参数
-    const url = queryString 
-      ? `${baseUrl}/${endpoint}?${queryString}`
-      : `${baseUrl}/${endpoint}`
+    let lastError = null
 
-    console.log('Proxying request to:', url.substring(0, 100) + '...')
+    // 尝试所有端点
+    for (const baseUrl of apiEndpoints) {
+      try {
+        // 构建完整 URL - 如果 queryString 为空，则不添加查询参数
+        const url = queryString 
+          ? `${baseUrl}/${endpoint}?${queryString}`
+          : `${baseUrl}/${endpoint}`
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'X-MBX-APIKEY': apiKey,
-        'User-Agent': 'Binance Multi-Account Analyzer',
-      },
-    })
+        console.log('Trying endpoint:', baseUrl)
 
-    console.log('Binance response status:', response.status)
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'X-MBX-APIKEY': apiKey,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Binance API error:', response.status, errorText)
-      
-      return NextResponse.json({
-        success: false,
-        message: `Binance API 错误: ${response.status}`,
-        details: errorText
-      }, { status: response.status })
+        console.log(`Response from ${baseUrl}:`, response.status)
+
+        if (response.ok) {
+          const data = await response.json()
+          return NextResponse.json({
+            success: true,
+            data
+          })
+        } else if (response.status === 451) {
+          // 地理限制错误，尝试下一个端点
+          const errorText = await response.text()
+          console.log(`451 error from ${baseUrl}, trying next endpoint...`)
+          lastError = { status: response.status, text: errorText, url: baseUrl }
+          continue
+        } else {
+          // 其他错误，返回错误信息
+          const errorText = await response.text()
+          console.error('Binance API error:', response.status, errorText)
+          
+          return NextResponse.json({
+            success: false,
+            message: `Binance API 错误: ${response.status}`,
+            details: errorText,
+            endpoint: baseUrl
+          }, { status: response.status })
+        }
+      } catch (fetchError) {
+        console.error(`Network error with ${baseUrl}:`, fetchError)
+        lastError = { error: fetchError, url: baseUrl }
+        continue
+      }
     }
 
-    const data = await response.json()
-    
+    // 所有端点都失败了
     return NextResponse.json({
-      success: true,
-      data
-    })
+      success: false,
+      message: '所有 Binance API 端点都无法访问，可能是地理限制导致的',
+      details: lastError,
+      suggestion: '建议使用VPN或尝试本地运行应用'
+    }, { status: 451 })
 
   } catch (error) {
     console.error('Proxy error:', error)

@@ -105,12 +105,23 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '连接失败'
       
-      // 检测 CORS 相关错误
+      // 检测不同类型的错误
       if (errorMessage.includes('Failed to fetch') || 
           errorMessage.includes('CORS') || 
           errorMessage.includes('网络错误') ||
           errorMessage.includes('fetch')) {
         setShowCorsHelper(true)
+      } else if (errorMessage.includes('451') || errorMessage.includes('地理限制')) {
+        setError(`🌍 地理位置限制错误
+
+当前服务器位置无法访问 Binance API。解决方案：
+
+1. 🔧 使用本地版本：下载并在本地运行应用
+2. 🌐 使用 VPN：连接到支持的地区
+3. 📱 使用官方应用：Binance 官方客户端
+4. ⚙️ 测试网模式：尝试勾选"使用测试网"选项
+
+技术详情：${errorMessage}`)
       } else {
         setError(errorMessage)
       }
