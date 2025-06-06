@@ -8,10 +8,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { endpoint, queryString, apiKey, testnet } = body
 
-    if (!endpoint || !queryString || !apiKey) {
+    // 修复参数验证：允许 queryString 为空字符串，但 endpoint 和 apiKey 仍然必需
+    if (!endpoint || apiKey === undefined || apiKey === null) {
       return NextResponse.json({
         success: false,
-        message: '缺少必要参数'
+        message: '缺少必要参数: endpoint 和 apiKey 是必需的'
       }, { status: 400 })
     }
 
@@ -19,8 +20,10 @@ export async function POST(request: NextRequest) {
       ? 'https://testnet.binance.vision/api/v3'
       : 'https://api.binance.com/api/v3'
 
-    // 构建完整 URL
-    const url = `${baseUrl}/${endpoint}?${queryString}`
+    // 构建完整 URL - 如果 queryString 为空，则不添加查询参数
+    const url = queryString 
+      ? `${baseUrl}/${endpoint}?${queryString}`
+      : `${baseUrl}/${endpoint}`
 
     console.log('Proxying request to:', url.substring(0, 100) + '...')
 
