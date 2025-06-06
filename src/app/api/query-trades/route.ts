@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { BinanceClient, formatTrade } from '@/lib/binance'
 import { BinanceAccount } from '@/types'
 
+// 强制使用 Node.js runtime
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

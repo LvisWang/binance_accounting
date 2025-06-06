@@ -170,7 +170,6 @@ export default function Home() {
         <AccountForm
           onSubmit={addAccount}
           onCancel={() => setShowAccountForm(false)}
-          loading={loading}
         />
       )}
 

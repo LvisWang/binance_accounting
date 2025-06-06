@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BinanceClient } from '@/lib/binance'
 
+// 强制使用 Node.js runtime，因为需要 crypto 模块
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

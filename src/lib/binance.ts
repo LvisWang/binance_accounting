@@ -9,28 +9,58 @@ export class BinanceClient {
   constructor(account: BinanceAccount) {
     this.apiKey = account.apiKey
     this.secretKey = account.secretKey
-    this.baseUrl = account.testnet 
-      ? 'https://testnet.binance.vision/api/v3'
-      : 'https://api.binance.com/api/v3'
+    
+    // 尝试不同的 API 端点，提高连接成功率
+    if (account.testnet) {
+      this.baseUrl = 'https://testnet.binance.vision/api/v3'
+    } else {
+      // 生产环境：优先使用主域名，如果失败会在 testConnection 中尝试其他端点
+      this.baseUrl = 'https://api.binance.com/api/v3'
+    }
+    
+    // 调试 crypto 模块
+    console.log('Crypto module available:', {
+      hasCrypto: !!crypto,
+      hasCreateHmac: !!(crypto && crypto.createHmac),
+      baseUrl: this.baseUrl
+    })
   }
 
   private sign(queryString: string): string {
-    return crypto
-      .createHmac('sha256', this.secretKey)
-      .update(queryString)
-      .digest('hex')
+    try {
+      console.log('Signing query string, length:', queryString.length)
+      const hmac = crypto.createHmac('sha256', this.secretKey)
+      const signature = hmac.update(queryString).digest('hex')
+      console.log('Signature created successfully, length:', signature.length)
+      return signature
+    } catch (error) {
+      console.error('Error creating signature:', error)
+      throw error
+    }
   }
 
-  private async makeRequest(endpoint: string, params: Record<string, any> = {}): Promise<any> {
+  private async makeRequest(endpoint: string, params: any = {}): Promise<any> {
     const timestamp = Date.now()
     const queryParams = {
       ...params,
-      timestamp,
+      timestamp: timestamp.toString(),
     }
+
+    console.log('Making request:', {
+      endpoint,
+      timestamp,
+      params: Object.keys(params)
+    })
 
     const queryString = new URLSearchParams(queryParams).toString()
     const signature = this.sign(queryString)
     const finalQueryString = `${queryString}&signature=${signature}`
+
+    console.log('Request details:', {
+      queryString: queryString.substring(0, 100) + '...',
+      signatureLength: signature.length,
+      finalQueryStringLength: finalQueryString.length
+    })
 
     const url = `${this.baseUrl}/${endpoint}?${finalQueryString}`
 
@@ -40,8 +70,15 @@ export class BinanceClient {
       },
     })
 
+    console.log('Response status:', response.status, response.statusText)
+
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText: errorText.substring(0, 500)
+      })
       throw new Error(`Binance API error: ${response.status} ${errorText}`)
     }
 
@@ -49,20 +86,56 @@ export class BinanceClient {
   }
 
   async testConnection(): Promise<boolean> {
-    try {
-      // 先测试服务器时间
-      const serverTimeResponse = await fetch(`${this.baseUrl}/time`)
-      if (!serverTimeResponse.ok) {
-        return false
-      }
+    // 备用 API 端点列表
+    const apiEndpoints = [
+      'https://api.binance.com/api/v3',
+      'https://api1.binance.com/api/v3',
+      'https://api2.binance.com/api/v3',
+      'https://api3.binance.com/api/v3'
+    ]
 
-      // 测试账户信息
-      await this.makeRequest('account')
-      return true
-    } catch (error) {
-      console.error('Connection test failed:', error)
-      return false
+    // 如果是测试网，只使用测试网端点
+    const endpointsToTry = this.baseUrl.includes('testnet') 
+      ? ['https://testnet.binance.vision/api/v3']
+      : apiEndpoints
+
+    for (const endpoint of endpointsToTry) {
+      try {
+        console.log(`Testing Binance connection with endpoint: ${endpoint}`)
+        
+        // 先测试服务器时间
+        const serverTimeResponse = await fetch(`${endpoint}/time`)
+        console.log(`Server time response status for ${endpoint}:`, serverTimeResponse.status)
+        
+        if (!serverTimeResponse.ok) {
+          console.error(`Server time request failed for ${endpoint}:`, serverTimeResponse.status)
+          continue // 尝试下一个端点
+        }
+
+        const serverTime = await serverTimeResponse.json()
+        console.log(`Server time from ${endpoint}:`, serverTime)
+
+        // 如果服务器时间测试成功，更新 baseUrl 并测试账户信息
+        const originalBaseUrl = this.baseUrl
+        this.baseUrl = endpoint
+
+        console.log('Testing account info request...')
+        const accountInfo = await this.makeRequest('account')
+        console.log('Account info request successful:', !!accountInfo)
+        
+        return true // 成功
+      } catch (error) {
+        console.error(`Connection test failed for endpoint ${endpoint}:`, {
+          error: error instanceof Error ? error.message : error,
+          stack: error instanceof Error ? error.stack : undefined,
+          name: error instanceof Error ? error.name : undefined
+        })
+        continue // 尝试下一个端点
+      }
     }
+
+    console.error('All API endpoints failed')
+    return false
   }
 
   private async getTradesForDay(symbol: string, date: Date): Promise<BinanceTrade[]> {
@@ -76,9 +149,9 @@ export class BinanceClient {
 
       const params = {
         symbol: symbol.toUpperCase(),
-        startTime: startTime.getTime(),
-        endTime: endTime.getTime(),
-        limit: 1000,
+        startTime: startTime.getTime().toString(),
+        endTime: endTime.getTime().toString(),
+        limit: '1000',
       }
 
       const trades = await this.makeRequest('myTrades', params)
@@ -153,7 +226,7 @@ export function analyzeTrades(selectedTrades: BinanceTrade[]) {
     total_count: selectedTrades.length,
     buy_count: buyTrades.length,
     sell_count: sellTrades.length,
-    accounts: [...new Set(selectedTrades.map(t => t.account_name))],
+    accounts: Array.from(new Set(selectedTrades.map(t => t.account_name))),
   }
 
   // 买入统计
