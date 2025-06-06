@@ -14,15 +14,17 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import config
 
 class BinanceTradeExporter:
     """Binance 交易记录导出器"""
     
-    def __init__(self, api_key=None, secret_key=None, testnet=None):
-        self.api_key = api_key or config.API_KEY
-        self.secret_key = secret_key or config.SECRET_KEY
-        testnet = testnet if testnet is not None else config.TESTNET
+    def __init__(self, api_key, secret_key, testnet=False):
+        # 要求传入 API 密钥，不再依赖 config 模块
+        if not api_key or not secret_key:
+            raise ValueError("API密钥和密钥不能为空")
+        
+        self.api_key = api_key
+        self.secret_key = secret_key
         self.base_url = "https://testnet.binance.vision/api/v3" if testnet else "https://api.binance.com/api/v3"
         
         # 创建带重试机制的session
@@ -599,9 +601,9 @@ def analyze_selected_trades(trades):
 
 def export_recent_trades():
     """导出最近指定天数的交易记录"""
-    symbol = input(f"请输入交易对 (默认: {config.DEFAULT_SYMBOL}): ").strip().upper() or config.DEFAULT_SYMBOL
-    days_input = input(f"请输入天数 (默认: {config.DEFAULT_DAYS}): ").strip()
-    days = int(days_input) if days_input else config.DEFAULT_DAYS
+    symbol = input(f"请输入交易对 (默认: BTCUSDT): ").strip().upper() or "BTCUSDT"
+    days_input = input(f"请输入天数 (默认: 7): ").strip()
+    days = int(days_input) if days_input else 7
     
     # 计算时间范围
     end_date = datetime.now()
@@ -614,8 +616,17 @@ def export_recent_trades():
     print(f"时间范围: {start_date_str} 到 {end_date_str}")
     
     try:
+        # 需要用户提供 API 密钥，因为不再从 config 读取
+        print("请输入您的 API 密钥：")
+        api_key = input("API Key: ").strip()
+        secret_key = input("Secret Key: ").strip()
+        
+        if not api_key or not secret_key:
+            print("❌ API 密钥不能为空")
+            return
+        
         # 初始化导出器
-        exporter = BinanceTradeExporter()
+        exporter = BinanceTradeExporter(api_key, secret_key)
         
         # 先测试API连接
         print("\n🔍 测试API连接和权限...")
@@ -636,13 +647,9 @@ def export_recent_trades():
             # 导出文件
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
-            if config.EXPORT_FORMAT in ["csv", "both"]:
-                csv_filename = f"{symbol}_trades_{timestamp}.csv"
-                exporter.export_to_csv(trades, csv_filename)
-            
-            if config.EXPORT_FORMAT in ["json", "both"]:
-                json_filename = f"{symbol}_trades_{timestamp}.json"
-                exporter.export_to_json(trades, json_filename)
+            # 默认导出 CSV 格式
+            csv_filename = f"{symbol}_trades_{timestamp}.csv"
+            exporter.export_to_csv(trades, csv_filename)
             
             print(f"\n✅ 导出成功！")
             
@@ -659,7 +666,7 @@ def export_recent_trades():
 
 def export_custom_period():
     """自定义时间段导出"""
-    symbol = input(f"请输入交易对 (默认: {config.DEFAULT_SYMBOL}): ").strip().upper() or config.DEFAULT_SYMBOL
+    symbol = input(f"请输入交易对 (默认: BTCUSDT): ").strip().upper() or "BTCUSDT"
     start_date = input("请输入开始日期 (格式: YYYY-MM-DD): ").strip()
     end_date = input("请输入结束日期 (格式: YYYY-MM-DD): ").strip()
     
@@ -670,7 +677,16 @@ def export_custom_period():
     print(f"\n导出 {symbol} 从 {start_date} 到 {end_date} 的交易记录...")
     
     try:
-        exporter = BinanceTradeExporter()
+        # 需要用户提供 API 密钥
+        print("请输入您的 API 密钥：")
+        api_key = input("API Key: ").strip()
+        secret_key = input("Secret Key: ").strip()
+        
+        if not api_key or not secret_key:
+            print("❌ API 密钥不能为空")
+            return
+        
+        exporter = BinanceTradeExporter(api_key, secret_key)
         
         # 先测试API连接
         if not exporter.test_connection():
@@ -682,13 +698,9 @@ def export_custom_period():
         if trades:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
-            if config.EXPORT_FORMAT in ["csv", "both"]:
-                csv_file = f"{symbol}_{start_date}_to_{end_date}_{timestamp}.csv"
-                exporter.export_to_csv(trades, csv_file)
-            
-            if config.EXPORT_FORMAT in ["json", "both"]:
-                json_file = f"{symbol}_{start_date}_to_{end_date}_{timestamp}.json"
-                exporter.export_to_json(trades, json_file)
+            # 默认导出 CSV 格式
+            csv_file = f"{symbol}_{start_date}_to_{end_date}_{timestamp}.csv"
+            exporter.export_to_csv(trades, csv_file)
             
             print(f"\n✅ 导出完成！")
             
@@ -707,9 +719,9 @@ def main():
     """主程序"""
     print("=== Binance 交易记录导出工具 ===\n")
     print(f"当前配置:")
-    print(f"  默认交易对: {config.DEFAULT_SYMBOL}")
-    print(f"  导出格式: {config.EXPORT_FORMAT}")
-    print(f"  测试网模式: {config.TESTNET}")
+    print(f"  默认交易对: BTCUSDT")
+    print(f"  导出格式: CSV")
+    print(f"  测试网模式: False")
     
     print("\n选择导出方式:")
     print("1. 导出最近N天的交易记录")
