@@ -27,6 +27,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
 
 # vercel
 .vercel
@@ -49,6 +50,8 @@ config.py
 api_result.json
 *.key
 *.secret
+*.env
+.env.*
 
 # 🗂️ 用户数据和导出文件
 exports/
@@ -57,6 +60,10 @@ downloads/
 *.json
 trades_*.csv
 analysis_*.json
+*_analysis_*.csv
+*_trades_*.csv
+*_account_info.json
+bybit_account_info.json
 
 # 📝 开发和调试文件
 .vscode/
@@ -80,3 +87,12 @@ $RECYCLE.BIN/
 *~
 .fuse_hidden*
 .nfs*
+
+# 🚫 测试文件和个人配置
+bybittest.py
+test_*.py
+*_test.py
+
+# 📱 本地存储数据
+crypto_accounts
+localStorage_backup.json

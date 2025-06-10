@@ -33,6 +33,27 @@ export default function TradesTable({ trades }: TradesTableProps) {
     })
   }
 
+  const getExchangeBadge = (exchange: string) => {
+    if (exchange === 'binance') {
+      return (
+        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+          Binance
+        </span>
+      )
+    } else if (exchange === 'okx') {
+      return (
+        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+          OKX
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+        Unknown
+      </span>
+    )
+  }
+
   const analyzeTrades = async () => {
     if (selectedTrades.length === 0) {
       alert('请先选择要分析的交易')
@@ -165,6 +186,9 @@ export default function TradesTable({ trades }: TradesTableProps) {
                 账户
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                交易所
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 时间
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -206,6 +230,9 @@ export default function TradesTable({ trades }: TradesTableProps) {
                   <span className="text-sm font-medium text-gray-900">
                     {trade.account}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {getExchangeBadge(trade.exchange)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="text-sm text-gray-900">

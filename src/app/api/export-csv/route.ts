@@ -19,10 +19,11 @@ export async function POST(request: NextRequest) {
     const csvLines: string[] = []
     
     // 写入标题
-    csvLines.push('Binance 多账户交易分析报告')
+    csvLines.push('多交易所多账户交易分析报告')
     csvLines.push(`生成时间,${new Date().toLocaleString('zh-CN')}`)
     csvLines.push(`交易对,${symbol || 'UNKNOWN'}`)
     csvLines.push(`涉及账户,"${analysis.accounts.join(', ')}"`)
+    csvLines.push(`涉及交易所,"${(analysis.exchanges || ['unknown']).join(', ')}"`)
     csvLines.push('')
 
     // 分析摘要
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     // 详细交易记录
     csvLines.push('=== 选中的交易记录 ===')
-    csvLines.push('账户,交易ID,交易时间,买卖方向,价格,数量,金额,手续费,手续费资产')
+    csvLines.push('账户,交易所,交易ID,交易时间,买卖方向,价格,数量,金额,手续费,手续费资产')
 
     selected_trades.forEach((trade: any) => {
       const tradeTime = new Date(parseInt(trade.time)).toLocaleString('zh-CN')
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
       
       csvLines.push([
         trade.account_name,
+        trade.exchange || 'unknown',
         trade.id,
         tradeTime,
         direction,

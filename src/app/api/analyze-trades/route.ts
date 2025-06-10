@@ -38,6 +38,10 @@ export async function POST(request: NextRequest) {
     // 分析交易
     const analysis = analyzeTrades(selectedTrades)
 
+    // 添加多交易所信息
+    const exchanges = Array.from(new Set(selectedTrades.map((trade: any) => trade.exchange || 'unknown')))
+    analysis.exchanges = exchanges
+
     return NextResponse.json({
       success: true,
       analysis

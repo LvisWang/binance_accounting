@@ -14,15 +14,24 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import config
+
+# 默认配置，替代config模块
+DEFAULT_CONFIG = {
+    'API_KEY': '',
+    'SECRET_KEY': '',
+    'TESTNET': False,
+    'DEFAULT_SYMBOL': 'BTCUSDT',
+    'DEFAULT_DAYS': 30,
+    'EXPORT_FORMAT': 'both'
+}
 
 class BinanceTradeExporter:
     """Binance 交易记录导出器"""
     
     def __init__(self, api_key=None, secret_key=None, testnet=None):
-        self.api_key = api_key or config.API_KEY
-        self.secret_key = secret_key or config.SECRET_KEY
-        testnet = testnet if testnet is not None else config.TESTNET
+        self.api_key = api_key or DEFAULT_CONFIG['API_KEY']
+        self.secret_key = secret_key or DEFAULT_CONFIG['SECRET_KEY']
+        testnet = testnet if testnet is not None else DEFAULT_CONFIG['TESTNET']
         self.base_url = "https://testnet.binance.vision/api/v3" if testnet else "https://api.binance.com/api/v3"
         
         # 创建带重试机制的session
@@ -599,9 +608,9 @@ def analyze_selected_trades(trades):
 
 def export_recent_trades():
     """导出最近指定天数的交易记录"""
-    symbol = input(f"请输入交易对 (默认: {config.DEFAULT_SYMBOL}): ").strip().upper() or config.DEFAULT_SYMBOL
-    days_input = input(f"请输入天数 (默认: {config.DEFAULT_DAYS}): ").strip()
-    days = int(days_input) if days_input else config.DEFAULT_DAYS
+    symbol = input(f"请输入交易对 (默认: {DEFAULT_CONFIG['DEFAULT_SYMBOL']}): ").strip().upper() or DEFAULT_CONFIG['DEFAULT_SYMBOL']
+    days_input = input(f"请输入天数 (默认: {DEFAULT_CONFIG['DEFAULT_DAYS']}): ").strip()
+    days = int(days_input) if days_input else DEFAULT_CONFIG['DEFAULT_DAYS']
     
     # 计算时间范围
     end_date = datetime.now()
@@ -636,11 +645,11 @@ def export_recent_trades():
             # 导出文件
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
-            if config.EXPORT_FORMAT in ["csv", "both"]:
+            if DEFAULT_CONFIG['EXPORT_FORMAT'] in ["csv", "both"]:
                 csv_filename = f"{symbol}_trades_{timestamp}.csv"
                 exporter.export_to_csv(trades, csv_filename)
             
-            if config.EXPORT_FORMAT in ["json", "both"]:
+            if DEFAULT_CONFIG['EXPORT_FORMAT'] in ["json", "both"]:
                 json_filename = f"{symbol}_trades_{timestamp}.json"
                 exporter.export_to_json(trades, json_filename)
             
@@ -659,7 +668,7 @@ def export_recent_trades():
 
 def export_custom_period():
     """自定义时间段导出"""
-    symbol = input(f"请输入交易对 (默认: {config.DEFAULT_SYMBOL}): ").strip().upper() or config.DEFAULT_SYMBOL
+    symbol = input(f"请输入交易对 (默认: {DEFAULT_CONFIG['DEFAULT_SYMBOL']}): ").strip().upper() or DEFAULT_CONFIG['DEFAULT_SYMBOL']
     start_date = input("请输入开始日期 (格式: YYYY-MM-DD): ").strip()
     end_date = input("请输入结束日期 (格式: YYYY-MM-DD): ").strip()
     
@@ -682,11 +691,11 @@ def export_custom_period():
         if trades:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
-            if config.EXPORT_FORMAT in ["csv", "both"]:
+            if DEFAULT_CONFIG['EXPORT_FORMAT'] in ["csv", "both"]:
                 csv_file = f"{symbol}_{start_date}_to_{end_date}_{timestamp}.csv"
                 exporter.export_to_csv(trades, csv_file)
             
-            if config.EXPORT_FORMAT in ["json", "both"]:
+            if DEFAULT_CONFIG['EXPORT_FORMAT'] in ["json", "both"]:
                 json_file = f"{symbol}_{start_date}_to_{end_date}_{timestamp}.json"
                 exporter.export_to_json(trades, json_file)
             
@@ -707,9 +716,9 @@ def main():
     """主程序"""
     print("=== Binance 交易记录导出工具 ===\n")
     print(f"当前配置:")
-    print(f"  默认交易对: {config.DEFAULT_SYMBOL}")
-    print(f"  导出格式: {config.EXPORT_FORMAT}")
-    print(f"  测试网模式: {config.TESTNET}")
+    print(f"  默认交易对: {DEFAULT_CONFIG['DEFAULT_SYMBOL']}")
+    print(f"  导出格式: {DEFAULT_CONFIG['EXPORT_FORMAT']}")
+    print(f"  测试网模式: {DEFAULT_CONFIG['TESTNET']}")
     
     print("\n选择导出方式:")
     print("1. 导出最近N天的交易记录")

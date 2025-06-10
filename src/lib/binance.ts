@@ -203,6 +203,7 @@ export function formatTrade(trade: BinanceTrade, accountName: string, index: num
     index,
     id: trade.id,
     account: accountName,
+    exchange: trade.exchange || 'binance', // 默认为 binance，支持 OKX 传入的 exchange 字段
     time: new Date(parseInt(trade.time)).toLocaleString('zh-CN'),
     direction: trade.isBuyer ? '买入' : '卖出',
     price: parseFloat(trade.price),

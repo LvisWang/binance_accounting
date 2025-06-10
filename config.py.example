@@ -1,17 +1,63 @@
 #!/usr/bin/env python3
 """
-Binance API 配置文件模板
-请复制此文件为 config.py 并填入你的实际配置
+配置文件示例 - 支持多交易所
+请复制此文件为 config.py 并填写您的 API 配置
+"""
+
+# 🔑 Binance API 配置
+BINANCE_API_KEY = "your_binance_api_key_here"
+BINANCE_SECRET_KEY = "your_binance_secret_key_here"
+
+# 🔑 OKX API 配置  
+OKX_API_KEY = "your_okx_api_key_here"
+OKX_SECRET_KEY = "your_okx_secret_key_here"
+OKX_PASSPHRASE = "your_okx_passphrase_here"
+
+# 🎯 默认交易配置
+DEFAULT_SYMBOL = "PNUTUSDT"  # 默认交易对
+DEFAULT_DAYS = 30  # 默认导出天数
+
+# 🌐 其他配置
+TESTNET = False  # 是否使用测试网
+EXPORT_FORMAT = "both"  # 导出格式: "csv", "json", "both"
+
+# 🔄 兼容性配置 (保持向后兼容)
+API_KEY = BINANCE_API_KEY
+SECRET_KEY = BINANCE_SECRET_KEY
+
+# 📝 使用说明
+"""
+1. Binance API 配置:
+   - 登录 Binance，进入 API 管理页面
+   - 创建新的 API Key，启用现货交易读取权限
+   - 将 API Key 和 Secret Key 填入上面的配置项
+
+2. OKX API 配置:
+   - 登录 OKX，进入 API 管理页面
+   - 创建新的 API Key，设置交易权限为 "只读"
+   - 将 API Key、Secret Key 和 Passphrase 填入上面的配置项
+   - 注意：OKX 需要额外的 Passphrase（API 密码）
+
+3. 安全建议:
+   - 仅授予读取权限，不要授予交易权限
+   - 定期更换 API 密钥
+   - 不要将配置文件上传到公共代码仓库
+   - 如果可能，设置 IP 白名单限制
+
+4. 测试网配置:
+   - Binance 测试网: https://testnet.binance.vision/
+   - OKX 模拟交易: https://www.okx.com/cn/demo-trading
+   - 将 TESTNET 设置为 True 可启用测试网模式
 """
 
 # Binance API 配置
 BINANCE_CONFIG = {
     # 🔑 在这里填入你的Binance API密钥
-    "api_key": "your_binance_api_key_here",
-    "secret_key": "your_binance_secret_key_here",
+    "api_key": BINANCE_API_KEY,
+    "secret_key": BINANCE_SECRET_KEY,
     
     # 网络配置
-    "testnet": False,  # 设为True使用测试网络
+    "testnet": TESTNET,  # 设为True使用测试网络
     "timeout": 30,     # 请求超时时间（秒）
     
     # 请求限制
@@ -22,7 +68,7 @@ BINANCE_CONFIG = {
 # 导出配置
 EXPORT_CONFIG = {
     # 默认导出格式
-    "default_format": "csv",  # csv 或 json
+    "default_format": EXPORT_FORMAT,  # csv 或 json
     
     # 文件命名
     "filename_template": "{symbol}_trades_{start_date}_to_{end_date}",
@@ -39,10 +85,10 @@ EXPORT_CONFIG = {
 # 默认查询参数
 DEFAULT_PARAMS = {
     # 默认交易对
-    "symbol": "BTCUSDT",
+    "symbol": DEFAULT_SYMBOL,
     
     # 默认时间范围（天数）
-    "default_days": 30,
+    "default_days": DEFAULT_DAYS,
     
     # 单次请求限制
     "limit": 1000,

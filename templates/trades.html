@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}交易记录 - Binance 多账户交易分析{% endblock %}
+{% block title %}交易记录 - 多交易所多账户交易分析{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -35,6 +35,7 @@
                                     <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
                                 </th>
                                 <th>账户</th>
+                                <th>交易所</th>
                                 <th>交易ID</th>
                                 <th>时间</th>
                                 <th>方向</th>
@@ -114,23 +115,36 @@ async function loadTradesData() {
     }
 }
 
+// 获取交易所徽章
+function getExchangeBadge(exchange) {
+    if (exchange === 'binance') {
+        return '<span class="badge bg-warning text-dark">Binance</span>';
+    } else if (exchange === 'okx') {
+        return '<span class="badge bg-info text-white">OKX</span>';
+    } else {
+        return '<span class="badge bg-secondary">Unknown</span>';
+    }
+}
+
 // 渲染交易表格
 function renderTradesTable() {
     const tbody = document.getElementById('tradesTableBody');
     
     if (tradesData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">没有交易数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">没有交易数据</td></tr>';
         return;
     }
     
     const rows = tradesData.map((trade, index) => {
         const directionClass = trade.direction === '买入' ? 'trade-buy' : 'trade-sell';
+        const exchangeBadge = getExchangeBadge(trade.exchange);
         return `
             <tr>
                 <td>
                     <input type="checkbox" value="${index}" onchange="updateSelection(this)">
                 </td>
                 <td><span class="badge bg-secondary">${trade.account}</span></td>
+                <td>${exchangeBadge}</td>
                 <td><small>${trade.id}</small></td>
                 <td><small>${trade.time}</small></td>
                 <td><span class="${directionClass}">${trade.direction}</span></td>
@@ -240,6 +254,12 @@ function displayAnalysisResults(analysis) {
     const card = document.getElementById('analysisCard');
     const resultsDiv = document.getElementById('analysisResults');
     
+    // 获取交易所徽章
+    let exchangeBadges = '';
+    if (analysis.exchanges) {
+        exchangeBadges = analysis.exchanges.map(exchange => getExchangeBadge(exchange)).join(' ');
+    }
+    
     let html = `
         <div class="row">
             <div class="col-md-12 mb-3">
@@ -270,7 +290,10 @@ function displayAnalysisResults(analysis) {
                         </div>
                     </div>
                 </div>
-                <p class="mt-2"><strong>涉及账户：</strong> ${analysis.accounts.join(', ')}</p>
+                <p class="mt-2">
+                    <strong>涉及账户：</strong> ${analysis.accounts.join(', ')}<br>
+                    <strong>涉及交易所：</strong> ${exchangeBadges}
+                </p>
             </div>
         </div>
     `;

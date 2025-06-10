@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Binance 多账户交易分析网站
+多交易所多账户交易分析网站 - 支持 Binance、OKX 和 Bybit
 """
 
 from flask import Flask, render_template, request, jsonify, session, send_file, flash, redirect, url_for
@@ -10,54 +10,100 @@ import csv
 import tempfile
 from datetime import datetime, timedelta
 from binance_exporter import BinanceTradeExporter
+from okx_exporter import OKXTradeExporter
+from bybit_exporter import BybitTradeExporter
 import traceback
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # 在生产环境中应该使用随机密钥
 
-class MultiAccountTradeAnalyzer:
-    """多账户交易分析器"""
+class MultiExchangeTradeAnalyzer:
+    """多交易所多账户交易分析器"""
     
     def __init__(self):
-        self.accounts = {}
+        self.accounts = {}  # {account_name: {'exporter': exporter, 'exchange': 'binance'/'okx'/'bybit'}}
         self.all_trades = []
     
-    def add_account(self, account_name, api_key, secret_key, testnet=False):
-        """添加账户"""
+    def add_binance_account(self, account_name, api_key, secret_key, testnet=False):
+        """添加 Binance 账户"""
         try:
             exporter = BinanceTradeExporter(api_key, secret_key, testnet)
             if exporter.test_connection():
-                self.accounts[account_name] = exporter
-                return True, "账户连接成功"
+                self.accounts[account_name] = {
+                    'exporter': exporter,
+                    'exchange': 'binance',
+                    'testnet': testnet
+                }
+                return True, "Binance 账户连接成功"
             else:
-                return False, "账户连接失败，请检查API密钥"
+                return False, "Binance 账户连接失败，请检查API密钥"
         except Exception as e:
-            return False, f"账户连接错误: {str(e)}"
+            return False, f"Binance 账户连接错误: {str(e)}"
     
-    def get_trades_from_all_accounts(self, symbol, start_date, end_date):
+    def add_okx_account(self, account_name, api_key, secret_key, passphrase, testnet=False):
+        """添加 OKX 账户"""
+        try:
+            exporter = OKXTradeExporter(api_key, secret_key, passphrase, testnet)
+            if exporter.test_connection():
+                self.accounts[account_name] = {
+                    'exporter': exporter,
+                    'exchange': 'okx',
+                    'testnet': testnet
+                }
+                return True, "OKX 账户连接成功"
+            else:
+                return False, "OKX 账户连接失败，请检查API密钥和密码"
+        except Exception as e:
+            return False, f"OKX 账户连接错误: {str(e)}"
+    
+    def add_bybit_account(self, account_name, api_key, secret_key, testnet=False):
+        """添加 Bybit 账户"""
+        try:
+            exporter = BybitTradeExporter(api_key, secret_key, testnet)
+            if exporter.test_connection():
+                self.accounts[account_name] = {
+                    'exporter': exporter,
+                    'exchange': 'bybit',
+                    'testnet': testnet
+                }
+                return True, "Bybit 账户连接成功"
+            else:
+                return False, "Bybit 账户连接失败，请检查API密钥"
+        except Exception as e:
+            return False, f"Bybit 账户连接错误: {str(e)}"
+    
+    def get_trades_from_all_accounts(self, symbol, start_date, end_date, exchange_filter=None):
         """从所有账户获取交易记录"""
         all_trades = []
         account_stats = {}
         
-        for account_name, exporter in self.accounts.items():
+        for account_name, account_info in self.accounts.items():
+            # 如果指定了交易所过滤器，只查询指定交易所的账户
+            if exchange_filter and account_info['exchange'] != exchange_filter:
+                continue
+                
             try:
+                exporter = account_info['exporter']
                 trades = exporter.get_all_trades_in_period(symbol, start_date, end_date)
                 
-                # 为每条交易添加账户信息
+                # 为每条交易添加账户信息和交易所信息
                 for trade in trades:
                     trade['account_name'] = account_name
+                    trade['exchange'] = account_info['exchange']
                 
                 all_trades.extend(trades)
                 account_stats[account_name] = {
                     'count': len(trades),
-                    'success': True
+                    'success': True,
+                    'exchange': account_info['exchange']
                 }
                 
             except Exception as e:
                 account_stats[account_name] = {
                     'count': 0,
                     'success': False,
-                    'error': str(e)
+                    'error': str(e),
+                    'exchange': account_info['exchange']
                 }
         
         # 按时间排序
@@ -73,11 +119,15 @@ class MultiAccountTradeAnalyzer:
         buy_trades = [t for t in selected_trades if t['isBuyer']]
         sell_trades = [t for t in selected_trades if not t['isBuyer']]
         
+        # 统计涉及的交易所
+        exchanges = list(set(t.get('exchange', 'unknown') for t in selected_trades))
+        
         analysis = {
             'total_count': len(selected_trades),
             'buy_count': len(buy_trades),
             'sell_count': len(sell_trades),
-            'accounts': list(set(t['account_name'] for t in selected_trades))
+            'accounts': list(set(t['account_name'] for t in selected_trades)),
+            'exchanges': exchanges
         }
         
         # 买入分析
@@ -145,7 +195,7 @@ class MultiAccountTradeAnalyzer:
         return analysis
 
 # 全局分析器实例
-analyzer = MultiAccountTradeAnalyzer()
+analyzer = MultiExchangeTradeAnalyzer()
 
 @app.route('/')
 def index():
@@ -158,6 +208,7 @@ def add_account():
     try:
         data = request.get_json()
         account_name = data.get('account_name')
+        exchange = data.get('exchange', 'binance')  # 默认为 binance
         api_key = data.get('api_key')
         secret_key = data.get('secret_key')
         testnet = data.get('testnet', False)
@@ -165,7 +216,20 @@ def add_account():
         if not account_name or not api_key or not secret_key:
             return jsonify({'success': False, 'message': '请填写完整的账户信息'})
         
-        success, message = analyzer.add_account(account_name, api_key, secret_key, testnet)
+        success = False
+        message = ""
+        
+        if exchange == 'binance':
+            success, message = analyzer.add_binance_account(account_name, api_key, secret_key, testnet)
+        elif exchange == 'okx':
+            passphrase = data.get('passphrase')
+            if not passphrase:
+                return jsonify({'success': False, 'message': 'OKX 账户需要提供 API 密码'})
+            success, message = analyzer.add_okx_account(account_name, api_key, secret_key, passphrase, testnet)
+        elif exchange == 'bybit':
+            success, message = analyzer.add_bybit_account(account_name, api_key, secret_key, testnet)
+        else:
+            return jsonify({'success': False, 'message': '不支持的交易所'})
         
         if success:
             # 保存账户列表到session
@@ -174,6 +238,7 @@ def add_account():
             
             session['accounts'].append({
                 'name': account_name,
+                'exchange': exchange,
                 'testnet': testnet
             })
             session.modified = True
@@ -191,6 +256,7 @@ def query_trades():
         symbol = data.get('symbol', 'PNUTUSDT').upper()
         start_date = data.get('start_date')
         end_date = data.get('end_date')
+        exchange_filter = data.get('exchange_filter')  # 可选的交易所过滤器
         
         if not start_date or not end_date:
             return jsonify({'success': False, 'message': '请选择查询时间范围'})
@@ -198,7 +264,7 @@ def query_trades():
         if not analyzer.accounts:
             return jsonify({'success': False, 'message': '请先添加至少一个账户'})
         
-        trades, account_stats = analyzer.get_trades_from_all_accounts(symbol, start_date, end_date)
+        trades, account_stats = analyzer.get_trades_from_all_accounts(symbol, start_date, end_date, exchange_filter)
         
         # 格式化交易数据用于前端显示
         formatted_trades = []
@@ -207,6 +273,7 @@ def query_trades():
                 'index': i,
                 'id': trade['id'],
                 'account': trade['account_name'],
+                'exchange': trade.get('exchange', 'unknown'),
                 'time': datetime.fromtimestamp(int(trade['time']) / 1000).strftime('%Y-%m-%d %H:%M:%S'),
                 'direction': '买入' if trade['isBuyer'] else '卖出',
                 'price': float(trade['price']),
@@ -220,6 +287,7 @@ def query_trades():
         # 将数据保存到session
         session['trades'] = trades
         session['symbol'] = symbol
+        session['exchange_filter'] = exchange_filter
         session.modified = True
         
         return jsonify({
@@ -256,6 +324,7 @@ def get_trades_data():
             'index': i,
             'id': trade['id'],
             'account': trade['account_name'],
+            'exchange': trade.get('exchange', 'unknown'),
             'time': datetime.fromtimestamp(int(trade['time']) / 1000).strftime('%Y-%m-%d %H:%M:%S'),
             'direction': '买入' if trade['isBuyer'] else '卖出',
             'price': float(trade['price']),
@@ -322,10 +391,11 @@ def export_csv():
         writer = csv.writer(temp_file)
         
         # 写入报告头部
-        writer.writerow(['Binance 多账户交易分析报告'])
+        writer.writerow(['多交易所多账户交易分析报告'])
         writer.writerow(['生成时间:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
         writer.writerow(['交易对:', symbol])
         writer.writerow(['涉及账户:', ', '.join(analysis['accounts'])])
+        writer.writerow(['涉及交易所:', ', '.join(analysis['exchanges'])])
         writer.writerow([''])
         
         # 写入分析摘要
@@ -377,7 +447,7 @@ def export_csv():
         
         # 详细交易记录
         writer.writerow(['=== 选中的交易记录 ==='])
-        writer.writerow(['账户', '交易ID', '交易时间', '买卖方向', '价格', '数量', '金额', '手续费', '手续费资产'])
+        writer.writerow(['账户', '交易所', '交易ID', '交易时间', '买卖方向', '价格', '数量', '金额', '手续费', '手续费资产'])
         
         for trade in selected_trades:
             trade_time = datetime.fromtimestamp(int(trade['time']) / 1000).strftime('%Y-%m-%d %H:%M:%S')
@@ -385,6 +455,7 @@ def export_csv():
             
             writer.writerow([
                 trade['account_name'],
+                trade.get('exchange', 'unknown'),
                 trade['id'],
                 trade_time,
                 direction,
@@ -399,7 +470,7 @@ def export_csv():
         
         # 生成文件名
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"{symbol}_multi_account_analysis_{timestamp}.csv"
+        filename = f"{symbol}_multi_exchange_analysis_{timestamp}.csv"
         
         return send_file(temp_file.name, as_attachment=True, download_name=filename, mimetype='text/csv')
         

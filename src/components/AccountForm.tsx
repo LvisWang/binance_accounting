@@ -1,25 +1,28 @@
 'use client'
 
 import { useState } from 'react'
-import { BinanceAccount } from '@/types'
+import { Account } from '@/types'
 import { X, Eye, EyeOff } from 'lucide-react'
 import CryptoJS from 'crypto-js'
 import CorsHelper from './CorsHelper'
 
 interface AccountFormProps {
-  onSubmit: (account: BinanceAccount) => void
+  onSubmit: (account: Account) => void
   onCancel: () => void
 }
 
 export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
   const [formData, setFormData] = useState({
     name: '',
+    exchange: 'binance' as 'binance' | 'okx' | 'bybit',
     apiKey: '',
     secretKey: '',
+    passphrase: '',
     testnet: false,
   })
   const [showApiKey, setShowApiKey] = useState(false)
   const [showSecretKey, setShowSecretKey] = useState(false)
+  const [showPassphrase, setShowPassphrase] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showCorsHelper, setShowCorsHelper] = useState(false)
@@ -30,78 +33,44 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
     setError('')
 
     try {
-      // 直接在客户端测试 Binance API 连接
-      const testAccount = { name: formData.name, apiKey: formData.apiKey, secretKey: formData.secretKey, testnet: formData.testnet }
-      
-      // 创建临时的 Binance 客户端来测试连接
-      const testConnection = async () => {
-        // 首先测试服务器时间（无需认证）
-        const timeResponse = await fetch('/api/binance-proxy', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            endpoint: 'time',
-            queryString: '',
-            apiKey: formData.apiKey,
-            testnet: formData.testnet
-          })
-        })
-
-        const timeResult = await timeResponse.json()
-        if (!timeResult.success) {
-          throw new Error(`无法连接到 Binance API: ${timeResult.message}`)
-        }
-
-        // 测试账户信息（需要认证）
-        const timestamp = Date.now()
-        const queryParams = new URLSearchParams({
-          timestamp: timestamp.toString(),
-        })
-        
-        const queryString = queryParams.toString()
-        
-        // 在客户端创建签名
-        const signature = CryptoJS.HmacSHA256(queryString, formData.secretKey).toString()
-        const finalQueryString = `${queryString}&signature=${signature}`
-
-        const accountResponse = await fetch('/api/binance-proxy', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            endpoint: 'account',
-            queryString: finalQueryString,
-            apiKey: formData.apiKey,
-            testnet: formData.testnet
-          })
-        })
-
-        const accountResult = await accountResponse.json()
-        if (!accountResult.success) {
-          throw new Error(`API 密钥验证失败: ${accountResult.message}`)
-        }
-
-        return true
+      // 直接调用 add-account API，它会处理连接测试
+      const newAccount: Account = {
+        name: formData.name,
+        exchange: formData.exchange,
+        apiKey: formData.apiKey,
+        secretKey: formData.secretKey,
+        passphrase: formData.exchange === 'okx' ? formData.passphrase : undefined,
+        testnet: formData.testnet
       }
 
-      await testConnection()
-      
-      // 如果连接成功，保存到本地存储
-      const accounts = JSON.parse(localStorage.getItem('binance_accounts') || '[]')
-      const newAccount = { name: formData.name, apiKey: formData.apiKey, secretKey: formData.secretKey, testnet: formData.testnet }
-      const updatedAccounts = [...accounts, newAccount]
-      localStorage.setItem('binance_accounts', JSON.stringify(updatedAccounts))
-      
-      onSubmit(newAccount)
-      setFormData({
-        name: '',
-        apiKey: '',
-        secretKey: '',
-        testnet: false,
+      const response = await fetch('/api/add-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newAccount),
       })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // 如果连接成功，保存到本地存储
+        const accounts = JSON.parse(localStorage.getItem('crypto_accounts') || '[]')
+        const updatedAccounts = [...accounts, newAccount]
+        localStorage.setItem('crypto_accounts', JSON.stringify(updatedAccounts))
+        
+        onSubmit(newAccount)
+        setFormData({
+          name: '',
+          exchange: 'binance',
+          apiKey: '',
+          secretKey: '',
+          passphrase: '',
+          testnet: false,
+        })
+      } else {
+        setError(result.message || '添加账户失败')
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '连接失败'
       
@@ -114,11 +83,11 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
       } else if (errorMessage.includes('451') || errorMessage.includes('地理限制')) {
         setError(`🌍 地理位置限制错误
 
-当前服务器位置无法访问 Binance API。解决方案：
+当前服务器位置无法访问 API。解决方案：
 
 1. 🔧 使用本地版本：下载并在本地运行应用
 2. 🌐 使用 VPN：连接到支持的地区
-3. 📱 使用官方应用：Binance 官方客户端
+3. 📱 使用官方应用：官方客户端
 4. ⚙️ 测试网模式：尝试勾选"使用测试网"选项
 
 技术详情：${errorMessage}`)
@@ -130,12 +99,21 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target
+    const checked = 'checked' in e.target ? e.target.checked : false
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }))
+  }
+
+  const getExchangeDisplayName = () => {
+    if (formData.exchange === 'binance') return 'Binance'
+    if (formData.exchange === 'okx') return 'OKX'
+    if (formData.exchange === 'bybit') return 'Bybit'
+    return 'Unknown'
   }
 
   return (
@@ -143,7 +121,7 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
       <div className="fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">添加 Binance 账户</h3>
+            <h3 className="text-lg font-semibold text-gray-800">添加交易所账户</h3>
             <button
               onClick={onCancel}
               className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -156,6 +134,23 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                选择交易所
+              </label>
+              <select
+                name="exchange"
+                value={formData.exchange}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-binance-yellow text-gray-900 bg-white"
+                disabled={loading}
+              >
+                <option value="binance">Binance</option>
+                <option value="okx">OKX</option>
+                <option value="bybit">Bybit</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 账户名称
               </label>
               <input
@@ -164,7 +159,7 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
                 value={formData.name}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-binance-yellow text-gray-900 bg-white"
-                placeholder="输入账户名称"
+                placeholder={`输入 ${getExchangeDisplayName()} 账户名称`}
                 required
                 disabled={loading}
               />
@@ -181,7 +176,7 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
                   value={formData.apiKey}
                   onChange={handleChange}
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-binance-yellow text-gray-900 bg-white"
-                  placeholder="输入 API Key"
+                  placeholder={`输入 ${getExchangeDisplayName()} API Key`}
                   required
                   disabled={loading}
                 />
@@ -207,7 +202,7 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
                   value={formData.secretKey}
                   onChange={handleChange}
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-binance-yellow text-gray-900 bg-white"
-                  placeholder="输入 Secret Key"
+                  placeholder={`输入 ${getExchangeDisplayName()} Secret Key`}
                   required
                   disabled={loading}
                 />
@@ -221,6 +216,34 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
                 </button>
               </div>
             </div>
+
+            {formData.exchange === 'okx' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  API 密码 (Passphrase)
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassphrase ? 'text' : 'password'}
+                    name="passphrase"
+                    value={formData.passphrase}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-binance-yellow text-gray-900 bg-white"
+                    placeholder="输入 OKX API 密码"
+                    required={formData.exchange === 'okx'}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassphrase(!showPassphrase)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    disabled={loading}
+                  >
+                    {showPassphrase ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center">
               <input
@@ -239,7 +262,7 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
 
             {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
+                <p className="text-red-600 text-sm whitespace-pre-line">{error}</p>
               </div>
             )}
 
@@ -255,7 +278,7 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
               <button
                 type="submit"
                 className="flex-1 px-4 py-2 bg-binance-yellow text-binance-dark rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50"
-                disabled={loading || !formData.name || !formData.apiKey || !formData.secretKey}
+                disabled={loading || !formData.name || !formData.apiKey || !formData.secretKey || (formData.exchange === 'okx' && !formData.passphrase)}
               >
                 {loading ? '添加中...' : '添加账户'}
               </button>
@@ -268,6 +291,12 @@ export default function AccountForm({ onSubmit, onCancel }: AccountFormProps) {
               <li>• API Key 仅在本地存储，不会上传到服务器</li>
               <li>• 建议创建仅用于查询的只读 API Key</li>
               <li>• 不要在公共环境中输入真实的 API 密钥</li>
+              {formData.exchange === 'okx' && (
+                <li>• OKX 需要额外的 API 密码 (Passphrase)</li>
+              )}
+              {formData.exchange === 'bybit' && (
+                <li>• Bybit 支持统一账户模式，确保API权限包含交易历史读取</li>
+              )}
             </ul>
           </div>
         </div>

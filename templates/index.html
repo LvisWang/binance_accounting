@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}账户配置 - Binance 多账户交易分析{% endblock %}
+{% block title %}账户配置 - 多交易所多账户交易分析{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -8,24 +8,32 @@
         <!-- 页面标题 -->
         <div class="text-center mb-4">
             <h1 class="display-5 fw-bold text-primary">
-                <i class="bi bi-wallet2"></i> Binance 多账户交易分析
+                <i class="bi bi-wallet2"></i> 多交易所多账户交易分析
             </h1>
-            <p class="lead text-muted">配置您的多个 Binance 账户，统一查询和分析交易记录</p>
+            <p class="lead text-muted">支持 Binance、OKX 和 Bybit 交易所，配置多个账户，统一查询和分析交易记录</p>
         </div>
 
         <!-- 账户配置卡片 -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> 添加 Binance 账户</h5>
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> 添加交易所账户</h5>
             </div>
             <div class="card-body">
                 <form id="accountForm">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label for="exchange" class="form-label">选择交易所</label>
+                            <select class="form-control" id="exchange" required>
+                                <option value="binance">Binance</option>
+                                <option value="okx">OKX</option>
+                                <option value="bybit">Bybit</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label for="accountName" class="form-label">账户名称</label>
                             <input type="text" class="form-control" id="accountName" placeholder="例如：主账户" required>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <div class="form-check mt-4">
                                 <input class="form-check-input" type="checkbox" id="testnet">
                                 <label class="form-check-label" for="testnet">
@@ -36,11 +44,15 @@
                     </div>
                     <div class="mb-3">
                         <label for="apiKey" class="form-label">API Key</label>
-                        <input type="text" class="form-control" id="apiKey" placeholder="输入您的 Binance API Key" required>
+                        <input type="text" class="form-control" id="apiKey" placeholder="输入您的 API Key" required>
                     </div>
                     <div class="mb-3">
                         <label for="secretKey" class="form-label">Secret Key</label>
-                        <input type="password" class="form-control" id="secretKey" placeholder="输入您的 Binance Secret Key" required>
+                        <input type="password" class="form-control" id="secretKey" placeholder="输入您的 Secret Key" required>
+                    </div>
+                    <div class="mb-3" id="passphraseField" style="display: none;">
+                        <label for="passphrase" class="form-label">API 密码 (OKX)</label>
+                        <input type="password" class="form-control" id="passphrase" placeholder="输入您的 OKX API 密码">
                     </div>
                     <button type="submit" class="btn btn-primary">
                         <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
@@ -71,15 +83,24 @@
             <div class="card-body">
                 <form id="queryForm">
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
+                            <label for="exchangeFilter" class="form-label">筛选交易所</label>
+                            <select class="form-control" id="exchangeFilter">
+                                <option value="">全部交易所</option>
+                                <option value="binance">仅 Binance</option>
+                                <option value="okx">仅 OKX</option>
+                                <option value="bybit">仅 Bybit</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
                             <label for="symbol" class="form-label">交易对</label>
                             <input type="text" class="form-control" id="symbol" value="PNUTUSDT" placeholder="例如：BTCUSDT" required>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label for="startDate" class="form-label">开始日期</label>
                             <input type="date" class="form-control" id="startDate" required>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label for="endDate" class="form-label">结束日期</label>
                             <input type="date" class="form-control" id="endDate" required>
                         </div>
@@ -118,8 +139,8 @@
                 <div class="row">
                     <div class="col-md-6">
                         <small class="text-muted">
-                            <strong>步骤1：</strong> 添加您的 Binance 账户（可添加多个）<br>
-                            <strong>步骤2：</strong> 设置查询参数（交易对、时间范围）<br>
+                            <strong>步骤1：</strong> 选择交易所并添加账户（支持 Binance、OKX 和 Bybit）<br>
+                            <strong>步骤2：</strong> 设置查询参数（交易对、时间范围、交易所筛选）<br>
                             <strong>步骤3：</strong> 查询并分析交易记录
                         </small>
                     </div>
@@ -127,7 +148,7 @@
                         <small class="text-muted">
                             <strong>安全提示：</strong> API 密钥仅在内存中临时存储，不会保存到文件<br>
                             <strong>权限要求：</strong> API 密钥需要现货交易读取权限<br>
-                            <strong>网络要求：</strong> 确保网络连接正常，可访问 Binance API
+                            <strong>特殊说明：</strong> OKX 需要额外提供 API 密码，Bybit 支持统一账户模式
                         </small>
                     </div>
                 </div>
@@ -150,7 +171,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 如果已有账户，显示账户列表
     updateAccountsList();
+    
+    // 监听交易所选择变化
+    document.getElementById('exchange').addEventListener('change', function() {
+        togglePassphraseField();
+    });
 });
+
+// 根据选择的交易所显示/隐藏密码字段
+function togglePassphraseField() {
+    const exchange = document.getElementById('exchange').value;
+    const passphraseField = document.getElementById('passphraseField');
+    const passphrase = document.getElementById('passphrase');
+    
+    if (exchange === 'okx') {
+        passphraseField.style.display = 'block';
+        passphrase.required = true;
+    } else {
+        passphraseField.style.display = 'none';
+        passphrase.required = false;
+        passphrase.value = '';
+    }
+}
 
 // 添加账户
 document.getElementById('accountForm').addEventListener('submit', async function(e) {
@@ -165,11 +207,17 @@ document.getElementById('accountForm').addEventListener('submit', async function
     submitBtn.disabled = true;
     
     const data = {
+        exchange: document.getElementById('exchange').value,
         account_name: document.getElementById('accountName').value,
         api_key: document.getElementById('apiKey').value,
         secret_key: document.getElementById('secretKey').value,
         testnet: document.getElementById('testnet').checked
     };
+    
+    // 如果是 OKX，添加密码
+    if (data.exchange === 'okx') {
+        data.passphrase = document.getElementById('passphrase').value;
+    }
     
     try {
         const response = await axios.post('/add_account', data);
@@ -177,6 +225,7 @@ document.getElementById('accountForm').addEventListener('submit', async function
         if (response.data.success) {
             showAlert('success', response.data.message);
             form.reset();
+            togglePassphraseField(); // 重置密码字段显示状态
             updateAccountsList();
         } else {
             showAlert('danger', response.data.message);
@@ -203,7 +252,8 @@ document.getElementById('queryForm').addEventListener('submit', async function(e
     const data = {
         symbol: document.getElementById('symbol').value.toUpperCase(),
         start_date: document.getElementById('startDate').value,
-        end_date: document.getElementById('endDate').value
+        end_date: document.getElementById('endDate').value,
+        exchange_filter: document.getElementById('exchangeFilter').value || null
     };
     
     try {
@@ -252,9 +302,10 @@ function displayQueryResults(data) {
     for (const [account, stats] of Object.entries(data.account_stats)) {
         const statusClass = stats.success ? 'text-success' : 'text-danger';
         const statusIcon = stats.success ? 'bi-check-circle' : 'bi-x-circle';
+        const exchangeBadge = getExchangeBadge(stats.exchange);
         html += `
             <p class="${statusClass}">
-                <i class="bi ${statusIcon}"></i> ${account}：${stats.count} 条记录
+                <i class="bi ${statusIcon}"></i> ${account} ${exchangeBadge}：${stats.count} 条记录
                 ${!stats.success ? `<br><small>${stats.error}</small>` : ''}
             </p>
         `;
@@ -267,6 +318,19 @@ function displayQueryResults(data) {
     
     resultsDiv.innerHTML = html;
     resultsCard.style.display = 'block';
+}
+
+// 获取交易所徽章
+function getExchangeBadge(exchange) {
+    if (exchange === 'binance') {
+        return '<span class="badge bg-warning text-dark">Binance</span>';
+    } else if (exchange === 'okx') {
+        return '<span class="badge bg-info text-white">OKX</span>';
+    } else if (exchange === 'bybit') {
+        return '<span class="badge bg-primary text-white">Bybit</span>';
+    } else {
+        return '<span class="badge bg-secondary">Unknown</span>';
+    }
 }
 
 // 跳转到交易记录页面

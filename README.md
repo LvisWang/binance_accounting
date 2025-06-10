@@ -1,197 +1,222 @@
-# 币安多账户交易分析工具
+# 多交易所多账户交易分析工具
 
-🚀 一个强大的币安交易数据分析工具，支持多账户管理、交易记录查询和数据分析。
+🚀 一个强大的加密货币交易数据分析工具，支持 **Binance、OKX 和 Bybit** 三大交易所的多账户管理、交易记录查询和数据分析。
 
 ## ✨ 功能特性
 
-- 📊 **多账户支持** - 同时管理多个币安账户
-- 🔍 **交易查询** - 按时间范围和交易对查询历史交易
-- 📈 **数据分析** - 自动计算盈亏、手续费统计等
-- 📁 **数据导出** - 支持 CSV 和 JSON 格式导出
-- 🌐 **双版本支持** - Web 版本和 Python 命令行版本
-- 🔒 **安全保护** - API 密钥本地存储，不上传服务器
+* 📊 **多交易所支持** - 支持 Binance、OKX、Bybit 三大主流交易所
+* 🏦 **多账户管理** - 同时管理多个交易所的多个账户
+* 🔍 **统一查询** - 跨交易所查询和分析交易记录
+* 📈 **智能分析** - 自动计算盈亏、手续费统计、平均价格等
+* 📁 **数据导出** - 支持 CSV 格式导出分析报告
+* 🌐 **现代化界面** - 基于 Next.js 的响应式 Web 界面
+* 🔒 **安全第一** - API 密钥仅本地存储，不上传服务器
+* 🎯 **实时分析** - 支持选择特定交易进行深度分析
+
+## 🏦 支持的交易所
+
+| 交易所 | 状态 | 特殊说明 |
+|--------|------|----------|
+| 🟡 **Binance** | ✅ 完全支持 | 需要现货交易读取权限 |
+| 🔵 **OKX** | ✅ 完全支持 | 需要 API 密码 (Passphrase) |
+| 🟣 **Bybit** | ✅ 完全支持 | 支持统一账户模式 |
 
 ## 🛠️ 技术栈
 
-**Web 版本:**
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Lucide React Icons
+**前端:**
+* Next.js 14 (App Router)
+* TypeScript
+* Tailwind CSS
+* Lucide React Icons
 
-**Python 版本:**
-- Python 3.7+
-- Flask
-- Requests
-- Pandas
+**后端:**
+* Node.js Runtime
+* Crypto API 集成
+* 实时数据处理
 
-## 📦 安装说明
+## 📦 快速开始
 
-### Web 版本（推荐）
+### 1. 克隆项目
 
-1. **克隆项目**
 ```bash
 git clone https://github.com/LvisWang/binance_accounting.git
 cd binance_accounting
 ```
 
-2. **安装依赖**
+### 2. 安装依赖
+
 ```bash
 npm install
 # 或者使用 yarn
 yarn install
 ```
 
-3. **启动开发服务器**
+### 3. 启动开发服务器
+
 ```bash
 npm run dev
 # 或者使用 yarn
 yarn dev
 ```
 
-4. **访问应用**
+### 4. 访问应用
+
 打开浏览器访问 `http://localhost:3000`
-
-### Python 版本
-
-1. **安装 Python 依赖**
-```bash
-pip install -r requirements.txt
-```
-
-2. **配置 API 密钥**
-```bash
-cp config.py.template config.py
-# 编辑 config.py 文件，添加你的 API 密钥
-```
-
-3. **运行应用**
-```bash
-# Web 界面版本
-python app.py
-
-# 命令行版本
-python run.py
-```
 
 ## 🔑 API 密钥配置
 
-### 获取 Binance API 密钥
+### Binance API 密钥
 
-1. 登录 [Binance](https://www.binance.com/)
+1. 登录 [Binance](https://www.binance.com)
 2. 进入 **账户管理** > **API 管理**
 3. 创建新的 API Key
-4. **重要**: 只需要 **读取** 权限，不要开启交易权限
+4. **重要**: 只勾选 **读取** 权限，不要开启交易权限
 
-### 配置密钥
+### OKX API 密钥
 
-**Web 版本**: 在界面上直接添加账户信息
+1. 登录 [OKX](https://www.okx.com)
+2. 进入 **账户** > **API**
+3. 创建新的 API Key
+4. 设置权限为 **只读**
+5. **重要**: 记住 API 密码 (Passphrase)
 
-**Python 版本**: 编辑 `config.py` 文件
-```python
-API_KEY = "your_api_key_here"
-SECRET_KEY = "your_secret_key_here"
-```
+### Bybit API 密钥
+
+1. 登录 [Bybit](https://www.bybit.com)
+2. 进入 **账户与安全** > **API 管理**
+3. 创建新的 API Key
+4. 权限设置为 **现货交易** > **读取**
+5. 建议开启统一账户模式
 
 ## 🚀 使用说明
 
-### Web 版本使用
+### 1. 添加交易所账户
 
-1. **添加账户**
-   - 点击"添加账户"按钮
-   - 输入账户名称、API Key 和 Secret Key
-   - 测试连接成功后保存
+* 点击 **"添加账户"** 按钮
+* 选择交易所（Binance/OKX/Bybit）
+* 输入账户名称、API Key 和 Secret Key
+* OKX 需要额外输入 API 密码
+* 系统会自动测试连接
 
-2. **查询交易**
-   - 选择账户和交易对
-   - 设置查询时间范围
-   - 点击"查询交易"
+### 2. 查询交易记录
 
-3. **分析数据**
-   - 选择要分析的交易记录
-   - 查看买入/卖出统计
-   - 查看盈亏分析
+* 选择要查询的交易所（可选择全部或特定交易所）
+* 输入交易对（如 BTCUSDT）
+* 设置查询时间范围
+* 点击 **"查询交易记录"**
 
-4. **导出数据**
-   - 点击"导出 CSV"或"导出 JSON"
-   - 数据将自动下载到本地
+### 3. 分析交易数据
 
-### Python 版本使用
+* 在交易记录表格中选择要分析的交易
+* 点击 **"分析选中交易"**
+* 查看详细的盈亏分析报告
+* 支持买入/卖出分别统计
 
-```bash
-# 查询最近30天的 BTCUSDT 交易
-python run.py
+### 4. 导出分析报告
 
-# 查询指定交易对和时间范围
-python binance_exporter.py --symbol ETHUSDT --days 7
+* 分析完成后点击 **"导出 CSV"**
+* 报告包含详细的交易统计和盈亏分析
+* 自动按时间排序，便于财务记录
 
-# 导出为 CSV 格式
-python binance_exporter.py --format csv
-```
+## 📊 功能截图
 
-## 📁 项目结构
+### 账户管理界面
+- 支持添加多个交易所账户
+- 实时连接状态检测
+- 安全的API密钥管理
 
-```
-binance_accounting/
-├── src/                    # Next.js 源代码
-│   ├── app/               # App Router 页面
-│   ├── components/        # React 组件
-│   ├── lib/              # 工具库
-│   └── types/            # TypeScript 类型定义
-├── public/               # 静态资源
-├── python/               # Python 版本代码
-│   ├── app.py           # Flask Web 应用
-│   ├── run.py           # 命令行入口
-│   └── binance_exporter.py # 核心逻辑
-├── config.py.template   # 配置文件模板
-└── README.md           # 使用说明
-```
+### 交易查询界面
+- 跨交易所统一查询
+- 灵活的时间范围选择
+- 实时交易数据获取
 
-## ⚠️ 注意事项
+### 数据分析界面
+- 智能盈亏计算
+- 手续费统计分析
+- 可视化交易记录
 
-### 安全建议
+## ⚠️ 安全须知
 
-1. **API 权限**: 只给 API Key 读取权限，切勿开启交易权限
-2. **密钥保护**: 不要在公共场所或代码中暴露 API 密钥
-3. **定期轮换**: 定期更换 API 密钥以保证安全
-4. **网络环境**: 确保在安全的网络环境中使用
+### 🔒 API 权限设置
 
-### 使用限制
+1. **仅读取权限**: 所有 API Key 只需要读取权限
+2. **禁用交易**: 绝不要给 API Key 交易权限
+3. **IP 白名单**: 建议设置 IP 白名单限制访问
 
-1. **频率限制**: Binance API 有请求频率限制，请避免过于频繁的查询
-2. **数据范围**: 单次查询建议不超过90天的数据
-3. **网络要求**: 需要稳定的网络连接访问 Binance API
+### 🛡️ 数据安全
+
+1. **本地存储**: API 密钥仅在浏览器本地存储
+2. **不上传服务器**: 系统不会上传任何密钥信息
+3. **加密传输**: 所有 API 请求都通过 HTTPS 加密
+
+### 🔄 定期维护
+
+1. **定期轮换**: 建议每 3-6 个月更换 API 密钥
+2. **权限检查**: 定期检查 API 权限设置
+3. **使用记录**: 关注 API 使用记录，发现异常及时处理
 
 ## 🐛 常见问题
 
 ### 连接问题
 
-**Q: 出现 CORS 错误怎么办？**
-A: 这是浏览器安全限制，建议使用本地版本或配置浏览器 CORS 扩展
+**Q: 出现地理限制错误怎么办？**
 
-**Q: 出现 451 地理限制错误？**
-A: 某些地区可能无法直接访问 Binance API，建议：
-- 使用 VPN
-- 使用本地版本
-- 尝试测试网模式
+A: 某些地区可能无法直接访问交易所 API，解决方案：
+- 使用 VPN 连接到支持的地区
+- 尝试勾选"使用测试网"选项
+- 确认本地网络连接正常
 
 **Q: API 密钥验证失败？**
+
 A: 请检查：
-- API Key 和 Secret Key 是否正确
-- API Key 是否有查询权限
-- 是否选择了正确的网络（主网/测试网）
+- API Key 和 Secret Key 是否正确输入
+- API Key 是否有足够的读取权限
+- OKX 是否正确输入了 API 密码
+- 是否选择了正确的网络环境
 
 ### 数据问题
 
 **Q: 查询不到交易数据？**
+
 A: 请确认：
-- 选择的时间范围内确实有交易
-- 交易对名称是否正确
-- API Key 对应的账户是否有该交易对的交易记录
+- 选择的时间范围内确实有交易记录
+- 交易对名称格式正确（如 BTCUSDT）
+- API Key 对应的账户有该交易对的交易历史
+- 网络连接稳定
+
+**Q: 不同交易所的数据格式不一致？**
+
+A: 系统会自动将所有交易所的数据转换为统一格式，确保分析的一致性。
+
+## 🎯 路线图
+
+- [x] Binance 集成
+- [x] OKX 集成  
+- [x] Bybit 集成
+- [x] 多账户管理
+- [x] 统一数据分析
+- [x] CSV 导出功能
+- [ ] 更多交易所支持
+- [ ] 高级图表分析
+- [ ] 实时价格监控
+- [ ] 移动端适配
 
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
+
+### 开发环境设置
+
+```bash
+# 克隆项目
+git clone https://github.com/LvisWang/binance_accounting.git
+
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+```
 
 ## 📄 许可证
 
@@ -199,9 +224,11 @@ MIT License
 
 ## 🔗 相关链接
 
-- [Binance API 文档](https://binance-docs.github.io/apidocs/)
-- [Next.js 官方文档](https://nextjs.org/docs)
+* [Binance API 文档](https://binance-docs.github.io/apidocs/)
+* [OKX API 文档](https://www.okx.com/docs-v5/en/)
+* [Bybit API 文档](https://bybit-exchange.github.io/docs/v5/intro)
+* [Next.js 官方文档](https://nextjs.org/docs)
 
 ---
 
-⚠️ **免责声明**: 本工具仅用于个人交易数据分析，不构成投资建议。使用时请确保遵守当地法律法规。 
+⚠️ **免责声明**: 本工具仅用于个人交易数据分析，不构成投资建议。使用时请确保遵守当地法律法规。数字货币投资有风险，请谨慎决策。 

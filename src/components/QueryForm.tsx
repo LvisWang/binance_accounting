@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Search, Calendar } from 'lucide-react'
 
 interface QueryFormProps {
-  onSubmit: (params: { symbol: string; start_date: string; end_date: string }) => void
+  onSubmit: (params: { symbol: string; start_date: string; end_date: string; exchange_filter?: string }) => void
   loading: boolean
 }
 
@@ -13,6 +13,7 @@ export default function QueryForm({ onSubmit, loading }: QueryFormProps) {
     symbol: 'PNUTUSDT',
     start_date: '',
     end_date: '',
+    exchange_filter: '',
   })
   const [selectedQuickRange, setSelectedQuickRange] = useState<number | null>(null)
 
@@ -32,24 +33,34 @@ export default function QueryForm({ onSubmit, loading }: QueryFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (formData.symbol && formData.start_date && formData.end_date) {
-      onSubmit(formData)
+      onSubmit({
+        symbol: formData.symbol,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        exchange_filter: formData.exchange_filter || undefined
+      })
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     if (name === 'symbol') {
       setFormData(prev => ({
         ...prev,
         [name]: value.toUpperCase(),
       }))
-    } else {
+    } else if (name === 'start_date' || name === 'end_date') {
       setFormData(prev => ({
         ...prev,
         [name]: value,
       }))
       // 如果用户手动改变日期，清除快速选择状态
       setSelectedQuickRange(null)
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }))
     }
   }
 
@@ -67,7 +78,25 @@ export default function QueryForm({ onSubmit, loading }: QueryFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-4 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            筛选交易所
+          </label>
+          <select
+            name="exchange_filter"
+            value={formData.exchange_filter}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-binance-yellow text-gray-900 bg-white"
+            disabled={loading}
+          >
+            <option value="">全部交易所</option>
+            <option value="binance">仅 Binance</option>
+            <option value="okx">仅 OKX</option>
+            <option value="bybit">仅 Bybit</option>
+          </select>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             交易对
@@ -167,6 +196,7 @@ export default function QueryForm({ onSubmit, loading }: QueryFormProps) {
         <p className="font-medium mb-1">💡 查询提示：</p>
         <ul className="text-xs space-y-1 text-gray-500">
           <li>• 系统将从所有已添加的账户中查询指定交易对的记录</li>
+          <li>• 支持筛选特定交易所或查询所有交易所</li>
           <li>• 系统会自动按天分段查询，避免 API 限制</li>
           <li>• 查询结果包含买入、卖出所有类型的交易</li>
         </ul>
